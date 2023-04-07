@@ -4,18 +4,18 @@ prospective household study
 
 ## Introduction
 
-This document contains a draft overview of the data, model, and main
-analyses. Full information is given in the R and Stan scripts, which can
-be found in the ‘scripts’ directory. Data are available in the ‘data’
-directory, and are sufficient to reproduce all results in the
-manuscript. Here we present the analyses for a model with proportional
-mixing in the household and a separate transmission rate for
-child-to-child transmission. Small modifications are needed to run all
-model scenarios and perform model selection using WBIC and LOO_IC.
+This page contains an overview of the data, model, and main analyses.
+Full information is given in the R and Stan scripts, which can be found
+in the ‘scripts’ directory. Data are available in the ‘data’ directory,
+and are sufficient to reproduce all results in the manuscript. Here we
+present the analyses for the model with proportional mixing in the
+household and a separate transmission rate for child-to-child
+transmission. Small modifications are needed to run all model scenarios
+and perform model selection using WBIC and LOO_IC.
 
 ## Data
 
-The main data are avaiable in two files called
+The main data are available in two files called
 ‘data_finalsize_stan_05072022’ and ‘data_escape_stan_05072022’. The
 first contains information on the final size of household outbreaks, and
 the second contains information on the period that each person has been
@@ -104,8 +104,8 @@ This file contains, for each person in the study, information of the
 start and end of the at-risk period, the household to which he/she
 belongs, and the outcome.
 
-In addition, dutch hospital admission data are downloaded from
-<https://data.rivm.nl/covid-19/>, for comparison with the estimated
+In addition, Dutch hospital admission data are downloaded from
+<https://data.rivm.nl/covid-19/> for comparison with the estimated
 hazards of introduction.
 
 ``` r
@@ -177,7 +177,7 @@ are calculated iteratively in the function ‘prob_infect_pattern’:
       }
 
 For estimation of the hazards of introduction of SARS-CoV-2 into the
-households we employ penalised splines and use first-order penalisation.
+households we employ penalised splines with first-order penalisation.
 See <https://www.jstor.org/stable/1391151> for details. Our
 implementation is based on code by Milad Kharratzadeh
 (<https://mc-stan.org/users/documentation/case-studies/splines_in_stan.html>).
@@ -196,12 +196,12 @@ program, which in our case is given by
     }
 
 Here we estimate susceptibility of children and adolescents relative to
-adults (‘rel_susceptibilty’), and absolute infectivity of all three
-person-types (‘infectivity’). A separate paremeter is estimated for
+adults (‘rel_susceptibilty’), and absolute infectivity of all
+person-types (‘infectivity’). A separate parameter is estimated for
 child-to-child transmission (‘extra_trans’). The weights of the spline
 defining the introduction hazard for adults are given by
 ‘ext_hazard_weights’, and the relative hazards for children and
-adolescvents realtive to adults are given by ‘ext_hazard_children’ and
+adolescents relative to adults are given by ‘ext_hazard_children’ and
 ‘ext_hazard_adolescents’.
 
 The log-likelihood contributions of all households are specified in the
@@ -209,8 +209,8 @@ The log-likelihood contributions of all households are specified in the
 those households that are infected), and survival hazards of all persons
 in the households. Notice that external infections are also allowed
 during the household outbreaks. The hazards of external infection are
-estimated to be very small realtive to the infection rates within the
-households, and therefore do only marginally affect the results.
+estimated to be very small relative to the infection rates within the
+households, and therefore affect the results only marginally.
 
       /* log-likelihood contributions per household (survival and outbreak) */
       for (i in 1 : num_households) {
@@ -244,7 +244,7 @@ households, and therefore do only marginally affect the results.
 
 Finally, the ‘generated quantities’ block contains code to calculate
 secondary attack rates for households of different compositions and
-different numbers and types of primary cases.
+different numbers and types of primary cases. The R script also contains
+code to reproduce the figures of the manuscript.
 
-**IMPORTANT. THIS IS A DRAFT WHICH WILL BE UPDATED IN THE COMING
-MONTHS**
+**IMPORTANT. THIS IS A DRAFT WHICH WILL BE UPDATED**
