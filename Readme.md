@@ -247,4 +247,4 @@ secondary attack rates for households of different compositions and
 different numbers and types of primary cases. The R script also contains
 code to reproduce the figures of the manuscript.
 
-**IMPORTANT. THIS IS A DRAFT WHICH WILL BE UPDATED**
+**IMPORTANT. THIS IS A DRAFT THAT WILL BE UPDATED**
