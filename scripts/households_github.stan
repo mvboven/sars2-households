@@ -23,17 +23,16 @@
 /*      \sum_{\wau < \omega} p(\wau | a, n) \binom{\omega}{\wau} \times      */    
 /*              \phi(\beta'(n-\omega))^{\omega - \wau}                       */
 /*                                                                           */
-/* Code is drafted by Chris van Dorp and Michiel van Boven (October 2020),   */
+/*                                                                           */
+/* Code is drafted by Chris van Dorp and Michiel van Boven (october 2020)    */
 /* and licensed with BSD3 clause (use but mention).                          */
 /*                                                                           */
-/* May 2022: This update uses the prospective cohort setup from the COKIDS   */
-/* study. Here final size analyses apply to the households whenever an       */
-/* introduction has occurred. At the same time, a p-spline is fitted to      */
-/* estimate the hazard of introduction into households. This                 */
-/* includes covariates of potential importance. Hazards are related to       */
-/* infection probabilities through p(infection(t)) = 1 - exp(-lambda(t)) etc */
-/* Notice that all hazards are type-specific. Also notice that in the        */
-/* prospective cohort setup no conditioning is needed.                       */
+/* May 2022: This update uses prospective cohort data. Here final size       */
+/* analyses apply to the households whenever an introduction has occurred.   */
+/* At the same time, a p-spline is fitted to estimate the hazard of          */
+/* introduction into households Hazards are related to infection             */
+/* probabilities through p(infection(t)) = 1 - exp(-lambda(t)).              */
+/* Notice that hazards are type-specific.                                    */
 
 functions {
   /* Laplace transform of the scaled infectious period (E(T_I)=1) with       */
@@ -61,14 +60,6 @@ functions {
   
   /* compute product of power functions: x^m = x_1^{m_1} * x_2^{m_2} * ... */
   real vec_power(vector x, array[] int m) {
-	/*
-	int dim = num_elements(m); //stan 2.21 no vectorised pow
-	real pr = 0;
-	for (i in 1 : dim) {
-	  pr *= x[i]^m[i];	
-	}
-	return pr;
-	*/
     return prod(pow(x, to_vector(m))); //stan 2.29 with vectorised pow
   }
       
@@ -184,10 +175,9 @@ data {
   array[num_households_infected, num_types] int<lower=0> J; // number of household infections
   array[num_households_infected, num_types] int<lower=0> A; // number of initial cases
   array[num_households_infected, num_types] int<lower=0> N; // initially uninfected individuals
-  array[num_households_infected] int<lower=0, upper=num_types> conditioning;// conditioning in case of single index
   array[num_households_infected, 2] int<lower=0> D;         // start and end of household outbreaks 
   int<lower=1> num_persons;                                 // total number of persons in the study
-  array[num_persons, 4] int<lower=0> hazard_times;          // hazards data (1=start, 2=end, 3=type, 4=infected)
+  array[num_persons, 4] int<lower=0> hazard_times;          // indvidual hazards data (1=start, 2=end, 3=type, 4=infected)
   array[num_persons] int id_household;                      // household id for each of the participants
   array[num_households_infected] int id_infected_household; // infected household ids
   int num_knots;                                            // number of knots
@@ -202,7 +192,6 @@ transformed data {
   matrix[num_basis, num_days] B;                            // matrix of B-splines
   vector[spline_degree + num_knots] ext_knots_temp;
   vector[2 * spline_degree + num_knots] ext_knots;          // extended knots
-  //vector[num_types-1] rel_susceptibility = rep_vector(1.0, num_types-1); // fixed susceptibility 
   row_vector[num_days] u_row = rep_vector(1.0, num_days)';           
   real<lower = 0, upper = 1> watanabe_beta;                 // sampling: 0 = normal; 1 = WBIC
   ext_knots_temp = append_row(rep_vector(knots[1], spline_degree), knots);
@@ -216,18 +205,13 @@ transformed data {
   }
   else { // mode == 1
     watanabe_beta = 1.0/log(num_households);     
-    //watanabe_beta = 1.0/log(num_households_infected);     // for analysis of infected households only
   }
 }
 
 parameters {
   vector<lower=0>[num_types-1] rel_susceptibility;          // relative susceptibilies (compared to reference class) 
   vector<lower=0>[num_types] infectivity;                   // infectivity parameters
-  //matrix<lower=0>[num_types, num_types] transmission_rate;// transmission rates in saturated model
-  //real<lower=0> infect_ref;                               // relative infectivity (one class)
-  //real<lower=0> b_ref;                                    // infectivity as parameter
   real<lower=0> extra_trans;                                // to accomodate potential additional specific transmsision 
-  //vector<lower=0>[num_types] hazards;                     // hazards of external infection (also during hh outbreak)
   matrix[1, num_basis] ext_hazard_weights;                  // spline weights, 1 spline, other groups with multiplier
   real<lower = 0> RWvar;                                    // variance of RW1/2 parameter, see Lang & Brezger (2004)
   real<lower = 0> ext_hazard_children;                      // 1 spline for adults, other types multiplicative to adults
@@ -237,12 +221,10 @@ parameters {
 transformed parameters {
   matrix<lower=0>[num_types, num_types] transmission_rate;  // transmission rates (unit: per infectious period)
   vector<lower=0>[num_types] susceptibility;                // susceptibility with 1 padded for reference class
-  //vector<lower=0>[num_types] infectivity;                 // infectivity for specific scenarios
   real<lower = 0> beta;                                     // transmission rate in reference class
   vector<lower=0>[num_types-1] rel_infectivity;             // infectivity relative to reference type (last class)
   matrix<lower=0>[num_days, num_types] ext_hazards;         // estimated external infection hazard(s) - for flexible extension
   vector[num_households] log_lik;                           // log-likelihood contributions (household and external)
-  //vector[num_households_infected] log_lik;                // log-likelihood contributions (household and external)
   matrix[num_types, num_basis] weights;                     // regression coefficients for the p-spline 
 
   /* calculation of spline weights */  
@@ -261,13 +243,11 @@ transformed parameters {
 
   /* calculate transmission rates from underlying assumptions   */
   /* notice that the last class (adults) is the reference group */
-  //infectivity = [infect_ref, 1.0, b_ref]';                // specific scenarios 
-  //infectivity = [1.0, 1.0, b_ref]';
-  //infectivity = [infect_ref,infect_ref,infect_ref]';
-//susceptibility = rep_vector(1.0, num_types);            // fixed susceptibility
   susceptibility = append_row(rel_susceptibility, 1.0);
   transmission_rate = susceptibility * infectivity';        // type-to-type transmission rates per infectious period
   transmission_rate[1, 1] = extra_trans;                    // 1=children; 2=adolescents; 3-adults
+  
+  print(median(D[,2] - D[,1]));
   
   /* fitting the model in terms of infectivity and rel_susceptibility is faster and       */
   /* easier than fitting in terms of beta and relative infectivities and relative         */
@@ -279,7 +259,6 @@ transformed parameters {
   rel_infectivity = infectivity[1 : num_types-1]/beta;
 
   /* log-likelihood contributions per household (survival and outbreak) */
-  //for (i in 1 : num_households_infected) {
   for (i in 1 : num_households) {
 	 log_lik[i] = 0.0;
     }
@@ -290,21 +269,16 @@ transformed parameters {
     for ( k in 1 : num_types) {
 	    ext_esc[k] = exp(-sum(ext_hazards[D[i,1] : D[i,2], k])); 
 	   };   
-     //ext_esc[1] = 1.0;
-     //ext_esc[2] = 1.0;
-     //ext_esc[3] = 1.0;
 	 /* notice that it is possible to switch between density- and frequency-dependent models */
 	 /* by dividing transmission matrix function call by hh_size (frequency-dependence)      */
 	 /* or by 1 (density-dependence). In the former, transmision rates are per infectious    */
-	 /* period, and in the latter rates are per infectious period per person                 */
-	 /* for conditioning on index cases, see earlier scripts                                 */
+	 /* period, and in the latter rates are per infectious period per person.                */
 	 /* also notice that continous time hazards are replaced by fixed hazards per day.       */
 	 /* this leads to faster code but with small differences with fully continuous model     */
      log_lik[id_infected_household[i]] = log(prob_infect_pattern(J[i,:], A[i,:], N[i,:], transmission_rate, ext_esc)); 
-     //log_lik[i] = log(prob_infect_pattern(J[i,:], A[i,:], N[i,:], transmission_rate, ext_esc)); 
 	}
 	
-  for ( i in 1 : num_persons ) { // escapes2802
+  for ( i in 1 : num_persons ) { // escapes
      int j = id_household[i]; 
 	 real total_hazard = sum(ext_hazards[hazard_times[i,1] : hazard_times[i,2]-1, hazard_times[i,3]]);
      if ( hazard_times[i,4] == 0 ) { // no infection on last day
@@ -336,10 +310,8 @@ generated quantities {
   vector[num_types] ext_esc = rep_vector(1.0, num_types);
   matrix[num_types, num_types] VE_S_adults = [[0, 0, 0], [0, 0, 0], [0.9, 0.9, 0.9]]; //move to data
   matrix[num_types, num_types] VE_I_adults = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];  
-  //matrix[num_types, num_types] VE_I_adults = [[0, 0, 0.5], [0, 0, 0.5], [0, 0, 0.5]];  
   matrix[num_types, num_types] VE_S_aduladols = [[0, 0, 0], [0.9, 0.9, 0.9], [0.9, 0.9, 0.9]]; 
   matrix[num_types, num_types] VE_I_aduladols = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; 
-  //matrix[num_types, num_types] VE_I_aduladols = [[0, 0.5, 0.5], [0, 0.5, 0.5], [0, 0.5, 0.5]];  
   array[num_types] int nn;
   array[num_types] int aa;
   int ll;
