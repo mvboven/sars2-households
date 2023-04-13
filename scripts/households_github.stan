@@ -229,10 +229,10 @@ transformed parameters {
 
   /* calculation of spline weights */  
   weights[3,1] = ext_hazard_weights[1,1];                   // now assuming 1 p-spline for adults (group 3)
-  for (i in 2 : num_basis) {				                // RW1 smoothing prior (Lang & Brezger, 2004) 
+  for (i in 2 : num_basis) {                                // RW1 smoothing prior (Lang & Brezger, 2004) 
       weights[3,i] = weights[3,i-1] + ext_hazard_weights[1,i] * sqrt(RWvar); // RW1 prior
     }
-  for (i in 1 : num_basis) {				                // exponentiated weights
+  for (i in 1 : num_basis) {                                // exponentiated weights
      weights[3,i] = exp(weights[3,i]);  
     }
   weights[1,] = ext_hazard_children * weights[3,];          // other groups have type-specific multiplier relative to adults
@@ -246,8 +246,6 @@ transformed parameters {
   susceptibility = append_row(rel_susceptibility, 1.0);
   transmission_rate = susceptibility * infectivity';        // type-to-type transmission rates per infectious period
   transmission_rate[1, 1] = extra_trans;                    // 1=children; 2=adolescents; 3-adults
-  
-  print(median(D[,2] - D[,1]));
   
   /* fitting the model in terms of infectivity and rel_susceptibility is faster and       */
   /* easier than fitting in terms of beta and relative infectivities and relative         */
