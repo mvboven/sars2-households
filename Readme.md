@@ -5,7 +5,7 @@ prospective household study
 ## Introduction
 
 This page contains an overview of the data, model, and main analyses presented in our 
-[medRxiv preprint](https://doi.org/10.1101/2023.06.02.23290879).The peer-reviewed manuscript has now been published in [PLOS COMP BIOL](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011832). Full information is given in the R and Stan scripts, which can be found
+[medRxiv preprint](https://doi.org/10.1101/2023.06.02.23290879). The peer-reviewed manuscript has now been published in [PLOS Computational Biology](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011832). Full information is given in the R and Stan scripts, which can be found
 in the ‘scripts’ directory. Data are available in the ‘data’ directory,
 and are sufficient to reproduce all results in the manuscript. Here we
 present the analyses for the model with proportional mixing in the
